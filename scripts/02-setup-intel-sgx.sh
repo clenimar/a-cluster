@@ -1,6 +1,6 @@
 #!/bin/bash
 
-branch_name=sgx_driver_2.5
+branch_name=sgx_driver_2.6
 
 # Dependencies
 yes | apt-get update
