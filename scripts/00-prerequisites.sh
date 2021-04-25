@@ -1,11 +1,13 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 function show_help {
     echo -e \
 "This script install prerequisites to setup a Kubernetes cluster
 through \`kubeadm\` utility. We use Docker as the container runtime.
+
+You're supposed to run this script as root.
 
 Usage: ./00-prerequisites.sh [--version=KUBE_VERSION] [--sgx]
 Parameters:
@@ -27,9 +29,14 @@ Parameters:
 KUBE_VERSION=""
 SGX=0
 
+if [[ "$EUID" -ne 0 ]]; then
+    echo "ERROR: You're supposed to run this script as root."
+    exit 1
+fi
+
 if [[ $# == 0 ]]; then
-    show_help
-    exit 0
+    echo "WARNING: No --version specified. Installing latest Kubernetes."
+    echo "WARNING: No --sgx specified. Will NOT install the SGX driver."
 fi
 
 while (( "$#" )); do
@@ -55,6 +62,7 @@ while (( "$#" )); do
 
         --version=*)
             KUBE_VERSION="=${1#*=}-00"
+            echo "INFO: Will install Kubernetes packages v${KUBE_VERSION}"
             shift
             ;;
 
@@ -104,7 +112,7 @@ systemctl restart docker
 # Install kubeadm, kubectl and kubelet.
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb https://apt.kubernetes.io/ kubernetes-$(lsb_release -cs) main
+deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get install -y kubelet${KUBE_VERSION} kubeadm${KUBE_VERSION} kubectl${KUBE_VERSION}
